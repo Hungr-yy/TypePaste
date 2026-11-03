@@ -18,7 +18,8 @@ def build():
     parser.add_argument('--skip-tests', action='store_true', help='Only for CI after its separate test job has passed')
     args = parser.parse_args()
     if not args.skip_tests:
-        subprocess.run([sys.executable, '-m', 'unittest', '-v', 'test_core.py', 'test_native.py'], cwd=ROOT, check=True)
+        subprocess.run([sys.executable, '-m', 'unittest', '-v', 'test_core.py', 'test_native.py',
+                        'test_wayland.py'], cwd=ROOT, check=True)
     output = ROOT / 'dist'
     output.mkdir(exist_ok=True)
     system = platform.system()
@@ -30,6 +31,7 @@ def build():
         files += sorted((ROOT / 'typepaste').rglob('*.py'))
         files += sorted(ROOT.glob('test_*.py')) + sorted(ROOT.glob('requirements-*.txt'))
         files += sorted((ROOT / 'scripts').glob('*.*'))
+        files += sorted((ROOT / 'docs').glob('*.md'))
         files += [ROOT / 'docs/typepaste-preview.png', ROOT / 'stepfwd-typepaste-v0.2-preview.png']
         with tarfile.open(archive, 'w:gz') as bundle:
             for path in files:

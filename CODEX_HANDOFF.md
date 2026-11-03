@@ -27,8 +27,8 @@ A screenshot visibly showed the text in the Kali terminal. The input mechanism w
 
 | Host | Key injection | Focus verification | Permissions / issues |
 |---|---|---|---|
-| Manjaro Linux | Existing `xdotool`/XTEST on X11; research Wayland-compatible authorized backend | `xdotool getactivewindow` on X11 | Native Wayland can prevent global focus inspection; XWayland may only expose X11 windows |
-| Ubuntu | Same X11 adapter; separate Wayland strategy as permitted | X11 as above; design fallback when unavailable | Session-type detection required; `DISPLAY` alone may point to XWayland |
+| Manjaro Linux | Existing `xdotool`/XTEST on X11; keyboard-only portal on KDE Wayland (preview) | `xdotool getactivewindow` on X11; fresh KWin snapshots on KDE Wayland | Explicit portal consent; other Wayland desktops remain disabled |
+| Ubuntu | Same X11 adapter; KDE Plasma 6 portal preview | X11 as above; KWin focus on Plasma 6, no GNOME Wayland adapter | Session-type detection required; `DISPLAY` alone may point to XWayland |
 | Windows 11 | Windows API `SendInput` or trusted wrapper, preserving text and special characters | `GetForegroundWindow`, process/window title/handle | Respect UIPI/integrity boundaries; no UAC bypass |
 | macOS | Quartz keyboard events (e.g. `CGEventKeyboardSetUnicodeString`) or documented accessibility APIs | `NSWorkspace`/Quartz accessible app/window | Document and request Accessibility permission explicitly; no silent screen/accessibility capture |
 
@@ -101,3 +101,21 @@ Release signing/notarization and real-machine validation remain required. v0.3 m
 ## Start-trigger clarification — 2026-11-03
 
 Removed the 220 ms focus-settle timer at the user's request. Arm then click the VM starts the transfer on the next successful linked-focus check. Per-character focus verification, worker cancellation, no automatic Enter, multiline/tab confirmation and the 35-second unused-Arm expiry remain. The UI labels the speed as ms/key to distinguish it from a start delay. This is still a focus trigger: Alt+Tab can also focus the linked window; no global mouse hook or additional input permission was introduced. Tests assert immediate start without clock advancement, refusal for other windows, and expiry before a late focus change.
+
+
+## v0.4 KDE Wayland preview — 2026-11-03
+
+The former blanket Wayland block is replaced only for KDE Plasma 6. `linux_wayland.py` manages asynchronous setup; `wayland_portal.py` owns a keyboard-only, nonpersistent RemoteDesktop session; `kwin_focus.py` loads a temporary KWin script; `wayland_bus.py` keeps a private Gio session-bus connection and GLib dispatch thread. PyGObject is a distro dependency, loaded only when enabling this backend. X11 behavior is unchanged.
+
+Settings → Enable Wayland starts the helper, verifies focus and lock-screen access, then requests keyboard permission. No ScreenCast, clipboard, pointer or device access is requested. No token or target is saved. Permission stays attached to the same backend instance; Refresh/profile changes and app exit release it. The controller defers disposal of an old backend until any key-pair worker has finished. UI permission state updates asynchronously and revocation disarms/unlinks.
+
+Each focus request has a unique nonce; only the KWin bus owner that loaded the script may answer. Responses contain UUID/PID/application class only. Stale/foreign replies, timeouts, helper loss, compositor restarts and unavailable/active screen locking fail closed. Cancel finishes at most the current key pair; key-up is attempted even after a failed down-call. Desktop method calls are bounded to 700 ms; permission UI waits at most 120 seconds outside Tk. Focus checks and delivery are still non-atomic. Physical Ctrl/Alt/Shift/Super state cannot independently be checked by this adapter: keep modifiers released. Unicode/keysym translation and browser-console compatibility need real validation.
+
+Test-first contracts were committed before implementation. New suites cover permission lifecycle, per-character focus/stop, exact sender/nonce identity, screen-lock failures, stale setup completion, and settings session retention. `test_wayland_dbus.py` uses real Gio and a fake portal on a separate D-Bus session, including response-before-method-return and request cancellation. `test_wayland_focus.py` is explicitly opt-in and tested fresh snapshots, deliberate loss of only its own helper, and cleanup on the actual Manjaro/KWin 6.7.4 desktop. It sends no keys. No real portal approval or Wayland STEPfwd typing has been tested yet. See docs/VALIDATION.md for build results.
+
+Additional release gates for KDE Wayland:
+
+- [ ] Approve/deny/cancel the real KDE keyboard prompt, revoke it from KDE, and reopen the app.
+- [ ] Link native Wayland Firefox and separately XWayland Firefox; test harmless input in STEPfwd.
+- [ ] Verify uppercase, punctuation, Unicode, layouts, stop, focus changes, locking and permission loss during a long transfer.
+- [ ] Repeat on a physical Ubuntu/Kubuntu Plasma 6 host; GNOME and Plasma 5 remain unavailable.

@@ -15,6 +15,7 @@ class Host:
     label: str
     session: str = ''
     display: str = ''
+    desktop: str = ''
 
 
 def identify_host_os(system_name, distro_id='', distro_like=''):
@@ -44,7 +45,7 @@ def detect_host():
     session = ('wayland' if os.environ.get('WAYLAND_DISPLAY') else
                os.environ.get('XDG_SESSION_TYPE', '').lower())
     return Host(system, identify_host_os(system, distro.get('ID', ''), distro.get('ID_LIKE', '')),
-                session, os.environ.get('DISPLAY', ''))
+                session, os.environ.get('DISPLAY', ''), os.environ.get('XDG_CURRENT_DESKTOP', ''))
 
 
 def choose_backend(selected=HOST_OS_OPTIONS[0], host=None):
@@ -56,7 +57,10 @@ def choose_backend(selected=HOST_OS_OPTIONS[0], host=None):
     try:
         if host.system == 'Linux':
             if host.session == 'wayland':
-                return UnavailableBackend('Wayland focus cannot be verified safely. Log into an X11 session.')
+                if 'kde' not in host.desktop.lower().split(':'):
+                    return UnavailableBackend('Wayland currently needs KDE Plasma 6 for safe focus checks. Other desktops can use an X11 session.')
+                from .linux_wayland import WaylandBackend
+                return WaylandBackend()
             if not host.display:
                 return UnavailableBackend('No X11 DISPLAY. Log into an X11 desktop session.')
             executable = shutil.which('xdotool')

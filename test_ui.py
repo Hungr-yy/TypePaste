@@ -109,6 +109,17 @@ class UISmokeTests(unittest.TestCase):
             self.assertIn('Approve keyboard access', self.app.backend_var.get())
             self.assertEqual(self.app.permission_button['text'], 'Enable Wayland…')
 
+    def test_permission_revocation_disarms_and_unlinks(self):
+        self.app.controller.begin_link()
+        self.app.controller.tick()
+        self.app.controller.arm('hello', False, 40)
+        with patch.object(self.app.controller.backend, 'capabilities', return_value=Capabilities(
+                False, 'Permission ended', permission_request=True)):
+            self.app._render()
+        self.assertEqual(self.app.controller.mode, 'idle')
+        self.assertIsNone(self.app.controller.target)
+        self.assertEqual(self.app.status_var.get(), 'Permission ended')
+
     def test_profile_change_invalidates_link_and_disables_arm(self):
         self.app.controller.begin_link()
         self.app.controller.tick()

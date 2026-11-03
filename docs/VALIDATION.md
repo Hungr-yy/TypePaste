@@ -36,3 +36,16 @@ Application revision `1a4c93116341dd2ff9360b69d679ca9434c7643d` passed [all thre
 The 220 ms focus-settle timer was removed. An armed transfer now starts on the next successful linked-focus observation, without waiting for a countdown. The trigger still uses focus, not a physical mouse hook: Alt+Tab into the linked window also counts. The 35-second unused-Arm expiry and per-character delay remain; the UI labels the latter `ms/key`.
 
 Test-first regressions verify that no clock advancement is needed to start, other windows cannot trigger typing, and focus arriving at expiry sends nothing. Core/API tests and GUI smoke checks passed locally; the complete platform-appropriate checks passed in CI. There are now 55 test methods across the four suites. The physical-machine and STEPfwd limitations above remain unchanged.
+
+
+## v0.4 KDE Wayland preview — 2026-11-03
+
+Local checks on Manjaro, Python 3.14.7, PyGObject 3.56.3 and KWin 6.7.4:
+
+- 65 core/native/Wayland unit tests: 63 passed, two native-only Windows/macOS smoke checks skipped on Linux.
+- Nine Tk UI tests passed on Xvfb; all three existing real xdotool/XTEST integration tests passed.
+- Three real Gio/D-Bus transport tests passed against a fake portal on an isolated session bus. This validates protocol encoding, early signals, denial, cancellation, revocation and paired key calls without injecting input.
+- Two read-only tests passed on the actual KDE Wayland desktop: fresh focus snapshots and cleanup, and refusal after deliberately unloading only the test's own helper. No window titles, clipboard or screen contents were read.
+- Python compilation passed. Packaging and installer checks are recorded below once completed.
+
+**Not tested:** real KDE permission approval, actual Wayland keyboard delivery, native Wayland or XWayland Firefox/STEPfwd, physical Ubuntu, Windows 11 or macOS. The only confirmed STEPfwd input remains the user's original direct xdotool command. Keep this release labeled a preview.

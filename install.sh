@@ -6,7 +6,13 @@ TYPEPASTE_DATA="${XDG_DATA_HOME:-$HOME/.local/share}"
 APPDIR="$TYPEPASTE_DATA/stepfwd-typepaste"
 DESKTOPDIR="$TYPEPASTE_DATA/applications"
 python3 -c 'import tkinter' || { echo 'Install Python and Tk first.' >&2; exit 1; }
-command -v xdotool >/dev/null || { echo 'Install xdotool first.' >&2; exit 1; }
+if [[ -n "${WAYLAND_DISPLAY:-}" || "${XDG_SESSION_TYPE:-}" == wayland ]]; then
+    python3 -c 'from gi.repository import Gio, GLib' || {
+        echo 'Wayland needs PyGObject: Manjaro python-gobject; Ubuntu python3-gi.' >&2; exit 1;
+    }
+else
+    command -v xdotool >/dev/null || { echo 'Install xdotool first.' >&2; exit 1; }
+fi
 mkdir -p "$APPDIR/typepaste/backends" "$DESKTOPDIR"
 if [[ "$APP_SOURCE" != "$APPDIR" ]]; then
     cp -- "$APP_SOURCE/stepfwd_sidecar.py" "$APPDIR/"
@@ -38,3 +44,7 @@ path.chmod(0o644)
 PY
 echo "Installed: STEPfwd TypePaste"
 echo "Launch via application menu or: python3 '$APPDIR/stepfwd_sidecar.py'"
+if [[ -n "${WAYLAND_DISPLAY:-}" || "${XDG_SESSION_TYPE:-}" == wayland ]]; then
+    echo 'On KDE Plasma 6: open Settings → Enable Wayland and approve keyboard access.'
+    echo 'Other Wayland desktops still require an X11 session.'
+fi

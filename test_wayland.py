@@ -7,7 +7,7 @@ from typepaste.backends import Host, choose_backend
 from typepaste.backends.base import BackendError, Target
 from typepaste.backends.linux_wayland import WaylandBackend, keysym_for
 from typepaste.backends.wayland_portal import PortalKeyboard
-from typepaste.backends.kwin_focus import FocusReply
+from typepaste.backends.kwin_focus import FocusReply, KWinFocus
 
 
 class FakeBus:
@@ -113,6 +113,26 @@ class PortalTests(unittest.TestCase):
 
 
 class FocusTests(unittest.TestCase):
+    def test_locked_screen_and_missing_lock_state_refuse_focus(self):
+        bus = Mock()
+        bus.owner.return_value = ':1.42'
+        focus = KWinFocus(bus)
+        focus.owner = ':1.42'
+        bus.call.return_value = (True,)
+        with self.assertRaisesRegex(BackendError, 'locked'):
+            focus.get_active_target()
+        bus.call.side_effect = RuntimeError('PRIVATE')
+        with self.assertRaisesRegex(BackendError, 'could not be verified'):
+            focus.get_active_target()
+
+    def test_compositor_restart_refuses_old_focus_identity(self):
+        bus = Mock()
+        bus.owner.return_value = ':1.43'
+        focus = KWinFocus(bus)
+        focus.owner = ':1.42'
+        with self.assertRaisesRegex(BackendError, 'disconnected'):
+            focus.get_active_target()
+
     def test_only_matching_sender_and_fresh_nonce_can_resolve_focus(self):
         reply = FocusReply(':1.42', 'nonce')
         values = ('{12345678-1234-1234-1234-123456789abc}', '123', 'firefox')
@@ -169,6 +189,21 @@ class BackendTests(unittest.TestCase):
         runtime.keyboard.ready = False
         self.assertFalse(backend.capabilities().available)
         self.assertTrue(backend.capabilities().permission_request)
+
+    def test_focus_failure_revokes_keyboard_session(self):
+        backend, runtime = self.ready_backend()
+        runtime.focus.get_active_target.side_effect = RuntimeError('PRIVATE')
+        with self.assertRaises(BackendError):
+            backend.get_active_target()
+        self.assertFalse(backend.capabilities().available)
+        runtime.close.assert_called_once()
+
+    def test_stop_sends_no_next_character(self):
+        backend, runtime = self.ready_backend()
+        stopped = threading.Event()
+        runtime.keyboard.send.side_effect = lambda _: stopped.set()
+        self.assertEqual(backend.send_keystrokes('abc', runtime.focus.get_active_target(), 20, stopped), 1)
+        runtime.keyboard.send.assert_called_once_with('a')
 
     def test_close_during_permission_setup_cannot_enable_later(self):
         started, release = threading.Event(), threading.Event()

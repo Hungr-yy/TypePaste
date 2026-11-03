@@ -8,9 +8,9 @@ The user copies text from another monitor, pastes it into a narrow, always-on-to
 
 ## Current state
 
-- `stepfwd_sidecar.py` is the slim Tk UI; `typepaste/core.py` owns transfer safety and `typepaste/backends/` contains separate native adapters. Linux X11 remains xdotool-based. Wayland/XWayland sessions fail closed.
+- `stepfwd_sidecar.py` is the slim Tk UI; `typepaste/core.py` owns transfer safety and `typepaste/backends/` contains separate native adapters. Linux X11 remains xdotool-based. KDE Plasma 6 Wayland has a preview portal/KWin adapter enabled explicitly in Settings. Other Wayland desktops fail closed.
 - Gear/settings validates Auto/Windows 11/macOS/Manjaro Linux/Ubuntu. Windows SendInput and macOS Quartz/Accessibility implementations are experimental until real STEPfwd testing; never claim build or fake-API tests establish hardware compatibility.
-- Test-driven development: add a failing regression test before changing behavior. `test_core.py`, `test_native.py`, `test_ui.py` and opt-in `test_x11_integration.py` cover safety, native API contracts, UI and isolated XTEST.
+- Test-driven development: add a failing regression test before changing behavior. `test_core.py`, `test_native.py`, `test_ui.py`, `test_wayland.py`, isolated `test_wayland_dbus.py`, opt-in `test_wayland_focus.py` and `test_x11_integration.py` cover safety, native API contracts, UI, portal transport and compositor focus.
 - `install.sh` installs the Linux launcher and modules. `scripts/` and GitHub Actions build native preview packages. `README.md` distinguishes actual validation from simulation.
 - `CODEX_HANDOFF.md` is the detailed engineering specification and acceptance checklist. Read it before modifying code.
 

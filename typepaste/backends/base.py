@@ -17,6 +17,7 @@ class Capabilities:
     focus_detection: bool = True
     unicode: bool = True
     permission_request: bool = False
+    permission_label: str = 'Allow Accessibility…'
 
 
 @dataclass(frozen=True)
@@ -76,6 +77,9 @@ class Backend:
 
     def request_permission(self) -> bool:
         return False
+
+    def close(self) -> None:
+        """Release native resources after the transfer worker has stopped."""
 
 
 class UnavailableBackend(Backend):

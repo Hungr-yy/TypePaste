@@ -42,6 +42,7 @@ class Controller:
         self.stopped = threading.Event()
         self.results = queue.Queue()
         self.generation = 0
+        self.retired_backends = []
 
     def message(self, text, level='info'):
         self.status, self.level = text, level
@@ -104,12 +105,16 @@ class Controller:
 
     def set_backend(self, backend):
         self.cancel(quiet=True)
+        if self.backend is not backend:
+            self.retired_backends.append(self.backend)
         self.backend = backend
+        self._close_retired()
         self.target = None
         caps = backend.capabilities()
         self.message(caps.reason, 'info' if caps.available else 'warning')
 
     def tick(self):
+        self._close_retired()
         while True:
             try:
                 generation, sent, error, stopped = self.results.get_nowait()
@@ -172,3 +177,15 @@ class Controller:
             error = 'Keyboard backend failed. Stopped; check the VM for partial input.'
         finally:
             self.results.put((generation, sent, error, stopped.is_set()))
+
+    def _close_retired(self):
+        if not self._busy():
+            for backend in self.retired_backends:
+                backend.close()
+            self.retired_backends.clear()
+
+    def close(self):
+        self.cancel(quiet=True)
+        if not self._busy():
+            self._close_retired()
+            self.backend.close()

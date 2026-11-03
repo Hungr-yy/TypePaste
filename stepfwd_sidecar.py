@@ -44,6 +44,7 @@ class TypePaste(tk.Tk):
         self.host = detect_host()
         self.controller = Controller(backend or choose_backend(self.host_os_var.get(), self.host))
         self.settings_window = None
+        self.last_capabilities = None
         self.pin_var = tk.BooleanVar(value=True)
         self.multiline_var = tk.BooleanVar(value=False)
         delay = prefs.get("delay_ms", 40)
@@ -158,12 +159,18 @@ class TypePaste(tk.Tk):
 
     def _render(self):
         controller = self.controller
+        caps = controller.backend.capabilities()
+        if self.last_capabilities is not None and caps != self.last_capabilities:
+            if not caps.available:
+                controller.cancel(quiet=True)
+                controller.target = None
+            controller.message(caps.reason, 'info' if caps.available else 'warning')
+        self.last_capabilities = caps
         self.status_var.set(controller.status)
         colors = {"info": MUTED, "active": BLUE, "success": GREEN, "warning": AMBER, "error": RED}
         self.status_label.configure(fg=colors[controller.level])
         self.target_var.set("Click Firefox…" if controller.mode == "binding" else
                             "Firefox linked" if controller.target else "Not linked")
-        caps = controller.backend.capabilities()
         busy = controller._busy()
         self.link_button.configure(state="normal" if caps.available and not busy else "disabled")
         self.arm_button.configure(state="normal" if caps.available and not busy else "disabled")
@@ -173,14 +180,18 @@ class TypePaste(tk.Tk):
             self.arm_button.configure(text="Typing into STEPfwd…", bg=GREEN)
         else:
             self.arm_button.configure(text="2  ARM PASTE → click VM", bg=BLUE)
+        self._render_settings()
 
     def refresh_backend(self, _event=None):
         self.controller.set_backend(choose_backend(self.host_os_var.get(), self.host))
         self._render()
+
+    def _render_settings(self):
         if self.settings_window and self.settings_window.winfo_exists():
             caps = self.controller.backend.capabilities()
             self.backend_var.set(f"{self.controller.backend.name}\n\n{caps.reason}")
             if caps.permission_request:
+                self.permission_button.configure(text=caps.permission_label)
                 self.permission_button.pack(fill="x", pady=(0, 8), before=self.settings_footer)
             else:
                 self.permission_button.pack_forget()
@@ -214,7 +225,8 @@ class TypePaste(tk.Tk):
         self.backend_var = tk.StringVar()
         tk.Label(frame, textvariable=self.backend_var, bg=BACKGROUND, fg=MUTED,
                  wraplength=320, justify="left", font=(self.ui_font, 9), anchor="w").pack(fill="x", pady=12)
-        self.permission_button = ttk.Button(frame, text="Allow Accessibility…", command=self.request_permission)
+        self.permission_button = ttk.Button(frame,
+            text=self.controller.backend.capabilities().permission_label, command=self.request_permission)
         if self.controller.backend.capabilities().permission_request:
             self.permission_button.pack(fill="x", pady=(0, 8))
         footer = tk.Frame(frame, bg=BACKGROUND)
@@ -228,7 +240,8 @@ class TypePaste(tk.Tk):
     def request_permission(self):
         self.controller.cancel(quiet=True)
         self.controller.backend.request_permission()
-        self.refresh_backend()
+        # Keep the same permission session; a new adapter would discard it.
+        self._render()
 
     def set_pin(self):
         self.attributes("-topmost", self.pin_var.get())
@@ -316,6 +329,7 @@ class TypePaste(tk.Tk):
         if self.controller._busy():
             self.after(25, self._finish_close)
         else:
+            self.controller.close()
             self.destroy()
 
 

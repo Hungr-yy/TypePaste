@@ -22,11 +22,16 @@ jobs:
           cache-dependency-path: requirements-*.txt
       - name: Linux UI dependencies
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y python3-tk xvfb xdotool x11-utils
+        run: sudo apt-get update && sudo apt-get install -y python3-tk python3-gi dbus-x11 xvfb xdotool x11-utils
       - name: Install build dependencies
         run: python -m pip install -r requirements-build.txt
       - name: Unit tests
-        run: python -m unittest -v test_core.py test_native.py
+        run: python -m unittest -v test_core.py test_native.py test_wayland.py
+      - name: Isolated Wayland portal transport tests
+        if: runner.os == 'Linux'
+        env:
+          TYPEPASTE_DBUS_TEST: '1'
+        run: dbus-run-session -- /usr/bin/python3 -m unittest -v test_wayland_dbus.py
       - name: Compile entry point
         run: python -m py_compile stepfwd_sidecar.py
       - name: Linux UI and X11 integration tests
