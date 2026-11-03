@@ -77,6 +77,8 @@ Safety improvements: exact window/process/application matching, control-characte
 
 Tests are in test_core.py, test_native.py, test_ui.py and test_x11_integration.py. The Git history records test-first contract commits. The GitHub Actions workflow builds destination-native artifacts. Windows Server CI is not Windows 11 testing. Automated macOS UI/build checks do not establish STEPfwd input compatibility. Read the actual CI run results before reporting success.
 
+The successful run for application revision `081c734` built Windows x64, macOS ARM64 and Linux x64 artifacts. See [docs/VALIDATION.md](docs/VALIDATION.md) for exact environments, checks and limitations.
+
 ## Remaining real-machine release gate
 
 Record host version, CPU architecture, X11/Wayland session, browser version, local/guest keyboard layouts, package identifier, and result for each run. Do not record actual clipboard content, credentials or personal screenshots.

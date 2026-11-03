@@ -11,12 +11,12 @@ A small, always-on-top keyboard companion for instructor-approved STEPfwd labs. 
 | Host | Implementation | Evidence | STEPfwd status |
 | --- | --- | --- | --- |
 | Manjaro X11 | `xdotool` / XTEST, exact window + PID + class | Local unit/UI tests and real XTEST into disposable Tk widgets on Xvfb | User's direct `xdotool` command worked on 2026-11-01; complete sidecar workflow still untested |
-| Ubuntu X11 | Same Linux adapter | CI workflow includes unit/UI/Xvfb integration checks; see the actual run result | No physical Ubuntu/STEPfwd validation |
-| Windows 11 | Native `SendInput`, foreground HWND + PID + Firefox process | Simulated API tests; native build/UI CI uses Windows Server, **not Windows 11** | Experimental; no Windows 11/STEPfwd validation |
-| macOS | Quartz + Accessibility focused-window identity | Simulated API tests; native macOS build/UI CI | Experimental; no physical Mac/STEPfwd validation |
+| Ubuntu X11 | Same Linux adapter | Unit/UI/Xvfb integration checks and source packaging passed on Ubuntu 24.04 CI | No physical Ubuntu/STEPfwd validation |
+| Windows 11 | Native `SendInput`, foreground HWND + PID + Firefox process | API/unit/UI checks and executable packaging passed on Windows Server CI, **not Windows 11** | Experimental; no Windows 11/STEPfwd validation |
+| macOS | Quartz + Accessibility focused-window identity | API/unit/UI checks and ARM64 app packaging passed on macOS 14 CI | Experimental; no physical Mac/STEPfwd validation |
 | Linux Wayland, including XWayland | Disabled | Tests verify refusal even when `DISPLAY` is set | Global focus cannot be verified reliably with this adapter |
 
-CI success establishes the checks it ran, not browser-console compatibility. Windows Unicode `VK_PACKET` and macOS Unicode events can be ignored by remote consoles that only use physical keycodes. Validate a harmless sample in STEPfwd before relying on these backends. Host/guest keyboard layouts and Unicode coverage also need real testing.
+See the [dated validation record and successful CI run](docs/VALIDATION.md). CI success establishes the checks it ran, not browser-console compatibility. Windows Unicode `VK_PACKET` and macOS Unicode events can be ignored by remote consoles that only use physical keycodes. Validate a harmless sample in STEPfwd before relying on these backends. Host/guest keyboard layouts and Unicode coverage also need real testing.
 
 ## Install and run
 
