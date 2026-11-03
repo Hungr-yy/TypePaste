@@ -8,6 +8,7 @@ import unittest
 from unittest.mock import patch
 
 from test_core import FakeBackend
+from typepaste.backends.base import Capabilities
 from stepfwd_sidecar import TypePaste
 from typepaste.preferences import load_prefs, save_prefs
 
@@ -74,6 +75,18 @@ class UISmokeTests(unittest.TestCase):
         confirm.assert_called_once()
         self.assertEqual(self.app.controller.mode, 'idle')
         self.assertEqual(self.app.controller.backend.sent, [])
+
+    def test_permission_action_appears_after_profile_refresh(self):
+        self.app.open_settings()
+        self.app.update()
+        self.assertFalse(self.app.permission_button.winfo_ismapped())
+        backend = FakeBackend()
+        with patch.object(backend, 'capabilities', return_value=Capabilities(
+                False, 'Accessibility required', permission_request=True)):
+            with patch('stepfwd_sidecar.choose_backend', return_value=backend):
+                self.app.refresh_backend()
+            self.app.update()
+            self.assertTrue(self.app.permission_button.winfo_ismapped())
 
     def test_profile_change_invalidates_link_and_disables_arm(self):
         self.app.controller.begin_link()

@@ -180,7 +180,10 @@ class TypePaste(tk.Tk):
         if self.settings_window and self.settings_window.winfo_exists():
             caps = self.controller.backend.capabilities()
             self.backend_var.set(f"{self.controller.backend.name}\n\n{caps.reason}")
-            self.permission_button.configure(state="normal" if caps.permission_request else "disabled")
+            if caps.permission_request:
+                self.permission_button.pack(fill="x", pady=(0, 8), before=self.settings_footer)
+            else:
+                self.permission_button.pack_forget()
 
     def open_settings(self):
         self.controller.cancel(quiet=True)
@@ -215,6 +218,7 @@ class TypePaste(tk.Tk):
         if self.controller.backend.capabilities().permission_request:
             self.permission_button.pack(fill="x", pady=(0, 8))
         footer = tk.Frame(frame, bg=BACKGROUND)
+        self.settings_footer = footer
         footer.pack(side="bottom", fill="x")
         ttk.Button(footer, text="Refresh", command=self.refresh_backend).pack(side="left")
         ttk.Button(footer, text="Done", command=window.destroy).pack(side="right")
