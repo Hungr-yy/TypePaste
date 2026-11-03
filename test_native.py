@@ -108,14 +108,24 @@ class MacTests(unittest.TestCase):
 
 
 class X11Tests(unittest.TestCase):
+    def test_ubuntu_legacy_xdotool_class_search(self):
+        backend = LinuxX11Backend()
+        def legacy_query(*args):
+            return {'getactivewindow': '123', 'getwindowpid': '42',
+                    'search': '123\n456'}.get(args[0])
+        with patch.object(backend, '_query', side_effect=legacy_query):
+            target = backend.get_active_target()
+        self.assertIsNotNone(target)
+        self.assertEqual((target.window_id, target.pid, target.application), ('123', 42, 'firefox'))
+
     def test_snapshot_must_be_stable(self):
         backend = LinuxX11Backend()
-        with patch.object(backend, '_query', side_effect=['123', 'firefox', '42', '456']):
+        with patch.object(backend, '_query', side_effect=['123', '123', '42', '456']):
             self.assertIsNone(backend.get_active_target())
 
     def test_pid_and_class_required(self):
         backend = LinuxX11Backend()
-        with patch.object(backend, '_query', side_effect=['123', 'firefox', None]):
+        with patch.object(backend, '_query', side_effect=['123', '123', None]):
             self.assertIsNone(backend.get_active_target())
 
     def test_payload_only_goes_to_stdin(self):
@@ -127,6 +137,26 @@ class X11Tests(unittest.TestCase):
             self.assertNotIn('$', popen.call_args.args[0])
             self.assertNotIn('shell', popen.call_args.kwargs)
             process.communicate.assert_called_once_with(input=b'$', timeout=1.0)
+
+
+
+class NativeHostSmokeTests(unittest.TestCase):
+    """Load the real native bridge on CI without posting any keyboard events."""
+    @unittest.skipUnless(__import__('sys').platform == 'win32', 'Windows native API only')
+    def test_windows_native_bindings_load(self):
+        backend = WindowsBackend()
+        self.assertIsInstance(backend.capabilities().available, bool)
+        self.assertEqual(backend.user32.SendInput.restype, ctypes.c_uint32)
+        self.assertEqual(backend.user32.GetForegroundWindow.restype, ctypes.c_void_p)
+
+    @unittest.skipUnless(__import__('sys').platform == 'darwin', 'macOS native API only')
+    def test_macos_native_unicode_event_creation_without_posting(self):
+        backend = MacOSBackend()
+        self.assertIsInstance(backend.capabilities().available, bool)
+        q = backend.api.q
+        event = q.CGEventCreateKeyboardEvent(None, 0, True)
+        self.assertIsNotNone(event)
+        q.CGEventKeyboardSetUnicodeString(event, 2, '🙂')
 
 
 if __name__ == '__main__':

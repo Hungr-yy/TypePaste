@@ -28,7 +28,11 @@ class LinuxX11Backend(Backend):
         window = self._query('getactivewindow')
         if not window or not window.isdecimal():
             return None
-        app = self._query('getwindowclassname', window)
+        # search --class is supported by Ubuntu's older xdotool;
+        # getwindowclassname is only present in newer releases.
+        matches = self._query('search', '--class',
+                              '^(firefox|firefox-esr|firefox-developer-edition|firefox-nightly)$')
+        app = 'firefox' if matches and window in matches.splitlines() else None
         pid = self._query('getwindowpid', window)
         if not app or not pid or not pid.isdecimal():
             return None
