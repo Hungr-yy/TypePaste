@@ -20,7 +20,7 @@ A screenshot visibly showed the text in the Kali terminal. The input mechanism w
 1. A compact, resizable, always-visible TypePaste sidecar sits in the unused left white margin of STEPfwd. It must remain usable while the user switches between Firefox, the VM console, and a second monitor. A KDE KWin fullscreen overlay rule may be required, with fallback to a maximized (non-F11) browser.
 2. Sidecar has a text area, **Clipboard** action, **Link target**, **Arm Paste**, **Cancel/Stop**, typing-speed control, multiline switch, and a **gear icon** to open Settings.
 3. The Settings dialog contains **Host operating system:** Auto (recommended), Windows 11, macOS, Manjaro Linux, Ubuntu. Auto selects the correct local operating system; an override must be validated against the actual host rather than blindly changing labels.
-4. After explicit arming, focus changes to the linked STEPfwd Firefox window, and the software types into the currently focused VM console without a fixed three-second timeout. If focus is lost, it should stop where technically possible.
+4. After explicit arming, clicking the VM brings the linked STEPfwd Firefox window into focus and starts typing as soon as that focus is detected. There is no countdown or extra 220 ms start pause. The 35-second Arm expiry only cancels an unused transfer. If focus is lost, it should stop where technically possible.
 5. Respect privacy: keep clipboard contents in memory, never write them to disk, never send them over network, and never type without a user-initiated Arm action.
 
 ## OS backend design (host, not guest)
@@ -67,7 +67,7 @@ The UI layer should depend on a typed adapter interface, not conditional branche
 
 ## v0.3 implementation update — 2026-11-03
 
-The slim Tk reference UI is retained. Native code lives in separate adapters; the controller owns link/arm/settle/type state and runs transfers outside Tk. The Windows adapter uses SendInput UTF-16 events, exact HWND/PID and Firefox executable checks. The macOS adapter uses Quartz Unicode events and Accessibility focused-window identity via CFEqual, with an explicit permission button. Native libraries are loaded only on their own host.
+The slim Tk reference UI is retained. Native code lives in separate adapters; the controller owns link/arm/type state and runs transfers outside Tk. The Windows adapter uses SendInput UTF-16 events, exact HWND/PID and Firefox executable checks. The macOS adapter uses Quartz Unicode events and Accessibility focused-window identity via CFEqual, with an explicit permission button. Native libraries are loaded only on their own host.
 
 Linux still uses xdotool/XTEST with payloads on stdin. Focus is checked per character. A real isolated Xvfb test exposed dropped Unicode with xdotool's zero delay; a 20 ms internal delay fixes the tested accented character and is retained. Requested speed is a minimum interval including backend time. Cancellation lets the current bounded key pair finish rather than killing xdotool between key-down and key-up. Ubuntu compatibility uses search --class because its older xdotool lacks getwindowclassname. No physical STEPfwd validation has been added by these tests.
 
@@ -97,3 +97,7 @@ For **each** of Manjaro X11, Ubuntu X11, Windows 11 and macOS:
 - [ ] Verify cancellation/clean shutdown from a packaged build and that preferences contain no payload data.
 
 Release signing/notarization and real-machine validation remain required. v0.3 must remain labeled a preview until those gates pass.
+
+## Start-trigger clarification — 2026-11-03
+
+Removed the 220 ms focus-settle timer at the user's request. Arm then click the VM starts the transfer on the next successful linked-focus check. Per-character focus verification, worker cancellation, no automatic Enter, multiline/tab confirmation and the 35-second unused-Arm expiry remain. The UI labels the speed as ms/key to distinguish it from a start delay. This is still a focus trigger: Alt+Tab can also focus the linked window; no global mouse hook or additional input permission was introduced. Tests assert immediate start without clock advancement, refusal for other windows, and expiry before a late focus change.

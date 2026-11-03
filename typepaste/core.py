@@ -27,7 +27,6 @@ def normalize_text(text, allow_multiline):
 class Controller:
     ARM_TIMEOUT = 35.0
     LINK_TIMEOUT = 45.0
-    FOCUS_SETTLE = 0.22
 
     def __init__(self, backend, clock=time.monotonic):
         self.backend = backend
@@ -38,7 +37,6 @@ class Controller:
         self.status = 'Link to your STEPfwd Firefox first.'
         self.level = 'info'
         self.deadline = 0
-        self.settle_until = 0
         self.delay_ms = 40
         self.worker = None
         self.stopped = threading.Event()
@@ -90,7 +88,7 @@ class Controller:
         self.pending_text, self.delay_ms = text, delay_ms
         self.mode = 'armed'
         self.deadline = self.clock() + self.ARM_TIMEOUT
-        self.message('Click inside the linked Firefox VM (35s timeout).', 'warning')
+        self.message('Click the linked VM to start. Cancels after 35s.', 'warning')
         return True
 
     def cancel(self, quiet=False):
@@ -127,7 +125,7 @@ class Controller:
                 self.message('Stopped. Check the VM for partial input.', 'warning')
             else:
                 self.message(f'Sent {sent} characters. Ready again.', 'success')
-        if self.mode not in ('binding', 'armed', 'settling'):
+        if self.mode not in ('binding', 'armed'):
             return
         now = self.clock()
         if now >= self.deadline:
@@ -150,13 +148,10 @@ class Controller:
             self.mode = 'idle'
             self.message('Linked! Paste text, arm, then click the VM.', 'success')
         elif self.target.matches(current):
-            if self.mode == 'armed':
-                self.mode = 'settling'
-                self.settle_until = now + self.FOCUS_SETTLE
-            elif now >= self.settle_until:
-                self._start_typing()
-        else:
-            self.mode = 'armed'
+            # A click into the linked VM brings its Firefox window into focus.
+            # Start on that observation; there is no timed start/countdown.
+            # The worker rechecks the target before sending the first character.
+            self._start_typing()
 
     def _start_typing(self):
         self.stopped = threading.Event()

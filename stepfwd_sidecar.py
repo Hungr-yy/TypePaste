@@ -132,7 +132,7 @@ class TypePaste(tk.Tk):
                         variable=self.pin_var, command=self.set_pin).pack(side="left")
         ttk.Checkbutton(options, text="Multiline", style="Sidecar.TCheckbutton",
                         variable=self.multiline_var).pack(side="left", padx=(5, 0))
-        tk.Label(options, text="ms", bg=BACKGROUND, fg=MUTED,
+        tk.Label(options, text="ms/key", bg=BACKGROUND, fg=MUTED,
                  font=(self.ui_font, 8)).pack(side="right")
         self.delay_menu = ttk.Combobox(options, textvariable=self.delay_var,
                                        values=("20", "40", "70", "120"),
@@ -167,7 +167,7 @@ class TypePaste(tk.Tk):
         busy = controller._busy()
         self.link_button.configure(state="normal" if caps.available and not busy else "disabled")
         self.arm_button.configure(state="normal" if caps.available and not busy else "disabled")
-        if controller.mode in ("armed", "settling"):
+        if controller.mode == "armed":
             self.arm_button.configure(text="ARMED — click VM terminal", bg="#cc8322")
         elif controller.mode == "typing":
             self.arm_button.configure(text="Typing into STEPfwd…", bg=GREEN)
@@ -235,7 +235,7 @@ class TypePaste(tk.Tk):
 
     def _text_changed(self, _event=None):
         if self.editor.edit_modified():
-            if self.controller.mode in ("armed", "settling"):
+            if self.controller.mode == "armed":
                 self.cancel()
                 self.controller.message("Text changed. Arm again when ready.", "warning")
             self.editor.edit_modified(False)

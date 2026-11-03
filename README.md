@@ -40,10 +40,10 @@ Source runs need Python 3.10+ and Tk. macOS additionally needs the pinned bridge
 1. Click **1 Link STEPfwd Firefox**, then click the Firefox window containing STEPfwd. Linking times out after 45 seconds.
 2. Paste text into the sidecar or click **Clipboard**. The clipboard is read only when you request it.
 3. Click **2 ARM PASTE → click VM**, or press Ctrl+Enter in the editor (Command+Enter also works on macOS).
-4. Click **directly inside the guest terminal/editor** within 35 seconds. Typing begins after the linked window holds focus for 220 ms.
+4. Click **directly inside the guest terminal/editor** within 35 seconds. Typing begins as soon as the linked window is detected in focus; there is no countdown or extra start delay. The 35 seconds is only an expiry for an unused Arm.
 5. Use **Cancel / Stop**, or Escape while the sidecar is focused, to stop. Losing the linked window's focus stops at the next backend check. Check for partial input before trying again.
 
-40 ms is the default minimum interval; choose 70 or 120 for slower consoles. Backend overhead may make typing slower than the selected interval. Keep modifier keys released while typing. Text stays in the sidecar for repeated use; **Clear** removes it. Opening Settings cancels an active transfer. Changing the host profile or clicking Refresh also discards the target link.
+**ms/key** is the minimum interval between characters, not a delay before starting. 40 ms is the default; choose 70 or 120 for slower consoles. Backend overhead may make typing slower than the selected interval. Keep modifier keys released while typing. Text stays in the sidecar for repeated use; **Clear** removes it. Opening Settings cancels an active transfer. Changing the host profile or clicking Refresh also discards the target link.
 
 The **gear** chooses the native **host** OS, not the guest Kali OS. Auto is recommended. An incorrect manual override disables Link and Arm and explains why. The settings panel shows backend availability and permission requirements.
 
@@ -51,6 +51,7 @@ The **gear** chooses the native **host** OS, not the guest Kali OS. Auto is reco
 
 - Explicit Arm is required for every transfer. The backend checks linked window identity before **each character**. Window/application matching never depends on a title substring.
 - This is a best-effort guard, not atomic routing: focus can change between inspection and OS event delivery. One in-flight character/key pair can still arrive after a change or cancellation. No desktop automation can promise that window focus alone identifies the guest terminal.
+- The trigger is window focus, so switching to the linked window with Alt+Tab also starts an armed transfer. It does not distinguish a physical mouse click.
 - A different tab, Firefox's address bar, a browser popup, or a different guest field inside the same linked window may be indistinguishable. Always click the actual VM input area and keep that tab selected.
 - No final Enter is added; trailing CR/LF are stripped. Embedded newlines and tabs are blocked by default. **Multiline** opt-in plus a per-transfer confirmation is required for either. Enter can execute commands and Tab can trigger completion or move focus: use a guest text editor.
 - NUL, Escape, Backspace, other control characters, invalid surrogates and alternate Unicode line separators are rejected. Text is limited to 20,000 characters.
@@ -89,7 +90,7 @@ On Windows with Python 3.12 installed, run `scripts/build-windows.ps1` from Powe
 ## Architecture and release gate
 
 - `stepfwd_sidecar.py`: compact Tk UI; no native keyboard or focus code.
-- `typepaste/core.py`: explicit link/arm/settle/type lifecycle, timeouts, generation-safe cancellation and worker isolation.
+- `typepaste/core.py`: explicit link/arm/type lifecycle, timeouts, generation-safe cancellation and worker isolation.
 - `typepaste/backends/`: typed target/capability records and separate Linux, Windows and macOS adapters.
 - `typepaste/preferences.py`: atomic, allowlisted preference writes.
 
