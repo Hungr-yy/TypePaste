@@ -1,5 +1,6 @@
 """UI smoke checks; run under Xvfb on Linux, native Tk on Windows/macOS."""
 import os
+import gc
 from pathlib import Path
 import tempfile
 import tkinter as tk
@@ -41,7 +42,11 @@ class UISmokeTests(unittest.TestCase):
             self.app.controller.cancel()
             self.app.after_cancel(self.app.tick_id)
             self.app.destroy()
+            del self.app
             self.prefs.stop()
+            # Tk finalizers must run on the thread that created the interpreter.
+            # Otherwise later worker allocations can collect old UI test cycles.
+            gc.collect()
 
     def test_simple_layout_and_settings(self):
         self.assertEqual(self.app.winfo_width(), 230)

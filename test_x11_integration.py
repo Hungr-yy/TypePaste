@@ -3,6 +3,7 @@
 Never enable this on a user's desktop: the test creates its own focus metadata.
 """
 import os
+import gc
 import subprocess
 import threading
 import time
@@ -48,6 +49,8 @@ class X11IntegrationTests(unittest.TestCase):
     def tearDown(self):
         self.backend.abort()
         self.root.destroy()
+        self.editor = self.root = None
+        gc.collect()
 
     def transfer(self, text, stopped=None):
         errors = []

@@ -34,7 +34,9 @@ jobs:
         env:
           TYPEPASTE_REQUIRE_GUI: '1'
           TYPEPASTE_X11_TEST: '1'
-        run: xvfb-run -a python -m unittest -v test_ui.py test_x11_integration.py
+        run: |
+          xvfb-run -a python -m unittest -v test_ui.py
+          xvfb-run -a python -m unittest -v test_x11_integration.py
       - name: Native Tk smoke tests
         if: runner.os != 'Linux'
         env:
