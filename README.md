@@ -2,6 +2,8 @@
 
 A small, always-on-top keyboard companion for instructor-approved STEPfwd labs. Paste text into the sidecar, link Firefox, arm, and click inside the VM. The slim UI follows the included [PNG reference](stepfwd-typepaste-v0.2-preview.png).
 
+![TypePaste sidecar and Settings, rendered on an isolated X11 display](docs/typepaste-preview.png)
+
 **v0.3 is a cross-platform preview, not a validated production release.** Native backends and packages exist; the real STEPfwd acceptance matrix still needs to be completed. This is an unofficial local utility, with no STEPfwd API, guest changes, telemetry, or network access in the application.
 
 ## What has actually been tested
