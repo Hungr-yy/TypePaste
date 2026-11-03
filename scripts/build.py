@@ -3,7 +3,6 @@
 import argparse
 from pathlib import Path
 import platform
-import shutil
 import subprocess
 import sys
 import tarfile
@@ -29,6 +28,9 @@ def build():
         archive = output / f'{name}.tar.gz'
         files = [ROOT / file for file in ('stepfwd_sidecar.py', 'install.sh', 'README.md', 'CODEX_HANDOFF.md')]
         files += sorted((ROOT / 'typepaste').rglob('*.py'))
+        files += sorted(ROOT.glob('test_*.py')) + sorted(ROOT.glob('requirements-*.txt'))
+        files += sorted((ROOT / 'scripts').glob('*.*'))
+        files += [ROOT / 'docs/typepaste-preview.png', ROOT / 'stepfwd-typepaste-v0.2-preview.png']
         with tarfile.open(archive, 'w:gz') as bundle:
             for path in files:
                 bundle.add(path, arcname=str(Path(name) / path.relative_to(ROOT)))

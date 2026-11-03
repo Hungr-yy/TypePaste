@@ -69,7 +69,7 @@ The UI layer should depend on a typed adapter interface, not conditional branche
 
 The slim Tk reference UI is retained. Native code lives in separate adapters; the controller owns link/arm/settle/type state and runs transfers outside Tk. The Windows adapter uses SendInput UTF-16 events, exact HWND/PID and Firefox executable checks. The macOS adapter uses Quartz Unicode events and Accessibility focused-window identity via CFEqual, with an explicit permission button. Native libraries are loaded only on their own host.
 
-Linux still uses xdotool/XTEST with payloads on stdin. Focus is checked per character. A real isolated Xvfb test exposed dropped Unicode with xdotool's zero delay; a 20 ms internal delay fixes the tested accented character and is retained. Requested speed is a minimum interval including backend time. No physical STEPfwd validation has been added by these tests.
+Linux still uses xdotool/XTEST with payloads on stdin. Focus is checked per character. A real isolated Xvfb test exposed dropped Unicode with xdotool's zero delay; a 20 ms internal delay fixes the tested accented character and is retained. Requested speed is a minimum interval including backend time. Cancellation lets the current bounded key pair finish rather than killing xdotool between key-down and key-up. Ubuntu compatibility uses search --class because its older xdotool lacks getwindowclassname. No physical STEPfwd validation has been added by these tests.
 
 Wayland/XWayland sessions now fail closed. DISPLAY alone is not enough to verify focus when native Wayland applications are present. A future consent-based portal adapter must solve focus identity before enabling input; do not enable ydotool as an unchecked fallback.
 

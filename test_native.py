@@ -130,14 +130,20 @@ class X11Tests(unittest.TestCase):
 
     def test_payload_only_goes_to_stdin(self):
         backend = LinuxX11Backend()
-        with patch('typepaste.backends.linux_x11.subprocess.Popen') as popen:
-            process = popen.return_value
-            process.returncode = 0
+        with patch('typepaste.backends.linux_x11.subprocess.run') as run:
+            run.return_value.returncode = 0
             backend._send_character('$')
-            self.assertNotIn('$', popen.call_args.args[0])
-            self.assertNotIn('shell', popen.call_args.kwargs)
-            process.communicate.assert_called_once_with(input=b'$', timeout=1.0)
+            self.assertNotIn('$', run.call_args.args[0])
+            self.assertNotIn('shell', run.call_args.kwargs)
+            self.assertEqual(run.call_args.kwargs['input'], b'$')
+            self.assertEqual(run.call_args.kwargs['timeout'], 1.0)
 
+    def test_abort_does_not_kill_an_inflight_key_pair(self):
+        backend = LinuxX11Backend()
+        backend._process = Mock()
+        backend._process.poll.return_value = None
+        backend.abort()
+        backend._process.terminate.assert_not_called()
 
 
 class NativeHostSmokeTests(unittest.TestCase):
