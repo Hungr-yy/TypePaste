@@ -88,6 +88,27 @@ class UISmokeTests(unittest.TestCase):
             self.app.update()
             self.assertTrue(self.app.permission_button.winfo_ismapped())
 
+    def test_permission_request_preserves_backend_session(self):
+        backend = self.app.controller.backend
+        self.app.open_settings()
+        with patch.object(backend, 'request_permission') as request:
+            with patch('stepfwd_sidecar.choose_backend') as choose:
+                self.app.request_permission()
+        request.assert_called_once()
+        choose.assert_not_called()
+        self.assertIs(self.app.controller.backend, backend)
+
+    def test_async_permission_status_updates_in_settings(self):
+        self.app.open_settings()
+        backend = self.app.controller.backend
+        with patch.object(backend, 'capabilities', return_value=Capabilities(
+                False, 'Approve keyboard access', permission_request=True,
+                permission_label='Enable Wayland…')):
+            self.app._render()
+            self.app.update()
+            self.assertIn('Approve keyboard access', self.app.backend_var.get())
+            self.assertEqual(self.app.permission_button['text'], 'Enable Wayland…')
+
     def test_profile_change_invalidates_link_and_disables_arm(self):
         self.app.controller.begin_link()
         self.app.controller.tick()

@@ -202,6 +202,11 @@ class ControllerTests(unittest.TestCase):
         self.controller.tick()
         self.assertEqual(self.backend.sent, [])
 
+    def test_replacing_backend_closes_old_native_session(self):
+        with patch.object(self.backend, 'close', create=True) as close:
+            self.controller.set_backend(FakeBackend())
+        close.assert_called_once()
+
     def test_focus_error_fails_closed(self):
         self.link()
         self.controller.arm('abc', False, 40)
