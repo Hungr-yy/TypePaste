@@ -46,6 +46,10 @@ Local checks on Manjaro, Python 3.14.7, PyGObject 3.56.3 and KWin 6.7.4:
 - Nine Tk UI tests passed on Xvfb; all three existing real xdotool/XTEST integration tests passed.
 - Three real Gio/D-Bus transport tests passed against a fake portal on an isolated session bus. This validates protocol encoding, early signals, denial, cancellation, revocation and paired key calls without injecting input.
 - Two read-only tests passed on the actual KDE Wayland desktop: fresh focus snapshots and cleanup, and refusal after deliberately unloading only the test's own helper. No window titles, clipboard or screen contents were read.
-- Python compilation passed. Packaging and installer checks are recorded below once completed.
+- Python compilation passed. The Linux bundle contains every Wayland runtime module and the validation docs. A temporary per-user installation with spaces in its path passed content checks. The existing per-user TypePaste installation was then updated and its installed Wayland modules verified against the source.
 
 **Not tested:** real KDE permission approval, actual Wayland keyboard delivery, native Wayland or XWayland Firefox/STEPfwd, physical Ubuntu, Windows 11 or macOS. The only confirmed STEPfwd input remains the user's original direct xdotool command. Keep this release labeled a preview.
+
+[The v0.4 native CI run](https://github.com/Hungr-yy/TypePaste/actions/runs/41690688094) passed all three jobs for application revision `8045185`: Ubuntu 24.04 x64, Windows Server 2022 x64, and macOS 14 ARM64. Linux also passed the real Gio/fake-portal transport suite using its system Python/PyGObject. All platform-appropriate unit and UI checks passed, followed by native packaging. Windows Server is not Windows 11 hardware testing; macOS event creation still does not post keyboard input.
+
+The three v0.4.0 packages were downloaded into ignored `dist/packages-0.4.0/`. ZIP integrity, Windows PE and macOS Mach-O presence, and Linux backend contents were checked. SHA-256 hashes are in that directory's `SHA256SUMS`. Later documentation-only commits do not change this tested application revision.
