@@ -28,3 +28,11 @@ Windows and macOS packages remain unsigned previews; macOS Intel and Windows ARM
 Test-first safety contracts caught stale cancellation status. Real X11 tests caught a Unicode timing issue at zero xdotool delay. Ubuntu CI caught the unsupported `getwindowclassname` command in its older xdotool, then exposed Tk test-fixture finalization on a worker thread; both were fixed. Additional regression tests cover safe in-flight key-pair completion and refreshing the macOS Accessibility button after a host-profile change.
 
 The user-provided proof remains the successful direct xdotool command into STEPfwd on Manjaro on 2026-11-01. No additional end-to-end STEPfwd success is claimed. Follow the remaining real-machine checklist in [CODEX_HANDOFF.md](../CODEX_HANDOFF.md) before marking any new host as validated production support.
+
+## v0.3.1 immediate-start update — 2026-11-03
+
+Application revision `1a4c93116341dd2ff9360b69d679ca9434c7643d` passed [all three native CI jobs](https://github.com/Hungr-yy/TypePaste/actions/runs/41599654857). Windows x64, macOS ARM64 and Linux x64 packages were rebuilt as v0.3.1.
+
+The 220 ms focus-settle timer was removed. An armed transfer now starts on the next successful linked-focus observation, without waiting for a countdown. The trigger still uses focus, not a physical mouse hook: Alt+Tab into the linked window also counts. The 35-second unused-Arm expiry and per-character delay remain; the UI labels the latter `ms/key`.
+
+Test-first regressions verify that no clock advancement is needed to start, other windows cannot trigger typing, and focus arriving at expiry sends nothing. Core/API tests and GUI smoke checks passed locally; the complete platform-appropriate checks passed in CI. There are now 55 test methods across the four suites. The physical-machine and STEPfwd limitations above remain unchanged.
