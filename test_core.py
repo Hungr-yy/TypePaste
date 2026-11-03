@@ -155,20 +155,20 @@ class ControllerTests(unittest.TestCase):
         self.assertFalse(self.controller.arm('abc', False, 40))
         self.assertEqual(self.backend.sent, [])
 
-    def test_arm_settle_and_complete(self):
+    def test_arm_starts_when_linked_focus_is_detected_without_start_delay(self):
         self.link()
         self.assertTrue(self.controller.arm('abc\n', False, 20))
         self.controller.tick()
-        self.assertEqual(self.backend.sent, [])
-        self.now = 0.23
-        self.controller.tick()
+        self.assertIsNotNone(self.controller.worker)
+        self.assertEqual(self.now, 0.0)  # No clock advance/countdown is necessary.
         self.finish()
         self.assertEqual(self.backend.sent, list('abc'))
         self.assertEqual(self.controller.mode, 'idle')
         self.assertEqual(self.controller.pending_text, '')
 
-    def test_arm_expires_including_settling(self):
+    def test_arm_expires_without_typing_if_target_never_focused(self):
         self.link()
+        self.backend.current = None
         self.controller.arm('abc', False, 40)
         self.controller.tick()
         self.now = 36
@@ -211,17 +211,31 @@ class ControllerTests(unittest.TestCase):
         self.assertNotIn('secret', self.controller.status)
         self.assertEqual(self.backend.sent, [])
 
-    def test_focus_settle_restarts_for_other_window(self):
+    def test_unrelated_focus_never_starts_transfer(self):
         self.link()
+        self.backend.current = Target('other', 123, 'firefox')
         self.controller.arm('abc', False, 40)
         self.controller.tick()
-        self.backend.current = None
-        self.now = 0.3
+        self.now = 10.0
         self.controller.tick()
+        self.assertEqual(self.backend.sent, [])
+        self.assertIsNone(self.controller.worker)
+        self.backend.current = self.controller.target
+        self.controller.tick()
+        self.assertIsNotNone(self.controller.worker)
+        self.finish()
+        self.assertEqual(self.backend.sent, list('abc'))
+
+    def test_focus_arriving_at_expiry_cannot_start_transfer(self):
+        self.link()
+        self.backend.current = None
+        self.controller.arm('abc', False, 40)
+        self.now = self.controller.ARM_TIMEOUT
         self.backend.current = self.controller.target
         self.controller.tick()
         self.assertEqual(self.backend.sent, [])
-        self.controller.cancel()
+        self.assertIsNone(self.controller.worker)
+        self.assertEqual(self.controller.mode, 'idle')
 
     def test_no_rearm_until_cancelled_worker_finishes(self):
         self.link()
