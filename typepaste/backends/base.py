@@ -1,6 +1,7 @@
 """Small native adapter boundary. No UI, clipboard, storage or network access."""
 from dataclasses import dataclass
 import threading
+import time
 
 
 class BackendError(Exception):
@@ -52,6 +53,7 @@ class Backend:
             raise BackendError(self.capabilities().reason)
         sent = 0
         for character in text:
+            started = time.monotonic()
             if stopped.is_set():
                 break
             if not target.matches(self.get_active_target()):
@@ -60,7 +62,7 @@ class Backend:
                 break
             self._send_character(character)
             sent += 1
-            if stopped.wait(delay_ms / 1000):
+            if stopped.wait(max(0, delay_ms / 1000 - (time.monotonic() - started))):
                 break
         return sent
 

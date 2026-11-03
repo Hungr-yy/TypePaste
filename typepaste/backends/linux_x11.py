@@ -39,9 +39,11 @@ class LinuxX11Backend(Backend):
 
     def _send_character(self, character):
         try:
+            # Allow X clients to consume temporary Unicode key mappings before
+            # xdotool restores them; a zero delay can drop non-ASCII characters.
             with self._lock:
                 process = subprocess.Popen(
-                    [self.executable, 'type', '--clearmodifiers', '--delay', '0', '--file', '-'],
+                    [self.executable, 'type', '--clearmodifiers', '--delay', '20', '--file', '-'],
                     stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 self._process = process
             try:

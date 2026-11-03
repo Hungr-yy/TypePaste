@@ -8,10 +8,10 @@ The user copies text from another monitor, pastes it into a narrow, always-on-to
 
 ## Current state
 
-- `stepfwd_sidecar.py` contains a functional *Linux X11/XWayland* prototype using `tkinter` and `xdotool` for active-window detection and typing.
-- Gear icon and Settings dialog already exist in v0.2, exposing Auto/Windows 11/macOS/Manjaro Linux/Ubuntu. Non-Linux backends are deliberately marked unsupported; selecting one must **not** pretend it is functional.
-- `test_core.py` tests text normalization and should be extended with platform/adapter tests.
-- `install.sh` installs the current Linux launcher. `README.md` documents use, supported systems, and safety limitations.
+- `stepfwd_sidecar.py` is the slim Tk UI; `typepaste/core.py` owns transfer safety and `typepaste/backends/` contains separate native adapters. Linux X11 remains xdotool-based. Wayland/XWayland sessions fail closed.
+- Gear/settings validates Auto/Windows 11/macOS/Manjaro Linux/Ubuntu. Windows SendInput and macOS Quartz/Accessibility implementations are experimental until real STEPfwd testing; never claim build or fake-API tests establish hardware compatibility.
+- Test-driven development: add a failing regression test before changing behavior. `test_core.py`, `test_native.py`, `test_ui.py` and opt-in `test_x11_integration.py` cover safety, native API contracts, UI and isolated XTEST.
+- `install.sh` installs the Linux launcher and modules. `scripts/` and GitHub Actions build native preview packages. `README.md` distinguishes actual validation from simulation.
 - `CODEX_HANDOFF.md` is the detailed engineering specification and acceptance checklist. Read it before modifying code.
 
 ## Engineering principles

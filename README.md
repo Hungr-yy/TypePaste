@@ -1,88 +1,96 @@
-# STEPfwd TypePaste v0.2 — Codex-ready prototype
+# STEPfwd TypePaste
 
-A narrow, always-on-top desktop companion window for typing local text into CMU CERT STEPfwd's browser-hosted Kali console using synthetic **keyboard input**, not clipboard integration. Useful for an authorized lab with no guest clipboard. Developed as a local proof of concept; not an official CMU/CERT tool.
+A small, always-on-top keyboard companion for instructor-approved STEPfwd labs. Paste text into the sidecar, link Firefox, arm, and click inside the VM. The slim UI follows the included [PNG reference](stepfwd-typepaste-v0.2-preview.png).
 
-## Platform support and settings
+**v0.3 is a cross-platform preview, not a validated production release.** Native backends and packages exist; the real STEPfwd acceptance matrix still needs to be completed. This is an unofficial local utility, with no STEPfwd API, guest changes, telemetry, or network access in the application.
 
-Click the **⚙ gear icon** at the top-right of the sidecar. In Settings, choose **Auto (recommended)** or one of **Windows 11, macOS, Manjaro Linux, Ubuntu** as the *host OS* profile. The Kali OS inside STEPfwd is a guest, and does **not** determine the selected profile. The selector remembers your choice and prevents sending keystrokes if it does not match the detected host.
+## What has actually been tested
 
-**Important:** this is a roadmap-ready selector, not a cross-platform release. The current backend is **Linux X11 using xdotool**, tested in a simulated environment and based on the user's successful manual command on Manjaro. On Wayland, it may work only if Firefox is running through XWayland. **Windows and macOS are not implemented** and the UI will honestly report that they are unavailable. Ubuntu with an X11 session uses the same Linux backend but has not been validated on an actual Ubuntu machine. Refer to `AGENTS.md` and `CODEX_HANDOFF.md` for a developer handoff and acceptance criteria.
+| Host | Implementation | Evidence | STEPfwd status |
+| --- | --- | --- | --- |
+| Manjaro X11 | `xdotool` / XTEST, exact window + PID + class | Local unit/UI tests and real XTEST into disposable Tk widgets on Xvfb | User's direct `xdotool` command worked on 2026-11-01; complete sidecar workflow still untested |
+| Ubuntu X11 | Same Linux adapter | CI workflow includes unit/UI/Xvfb integration checks; see the actual run result | No physical Ubuntu/STEPfwd validation |
+| Windows 11 | Native `SendInput`, foreground HWND + PID + Firefox process | Simulated API tests; native build/UI CI uses Windows Server, **not Windows 11** | Experimental; no Windows 11/STEPfwd validation |
+| macOS | Quartz + Accessibility focused-window identity | Simulated API tests; native macOS build/UI CI | Experimental; no physical Mac/STEPfwd validation |
+| Linux Wayland, including XWayland | Disabled | Tests verify refusal even when `DISPLAY` is set | Global focus cannot be verified reliably with this adapter |
 
-## Install on Manjaro
+CI success establishes the checks it ran, not browser-console compatibility. Windows Unicode `VK_PACKET` and macOS Unicode events can be ignored by remote consoles that only use physical keycodes. Validate a harmless sample in STEPfwd before relying on these backends. Host/guest keyboard layouts and Unicode coverage also need real testing.
+
+## Install and run
+
+Download a package from a successful **Test and package** GitHub Actions run. These are unsigned preview artifacts, not signed/notarized releases.
+
+- **Windows 11:** extract the Windows ZIP and run `TypePaste.exe` as your normal user. Keep Firefox at normal privilege too. No administrator or UAC bypass is used.
+- **macOS:** extract the macOS ZIP, move `TypePaste.app` to Applications, and open it. In the gear menu, click **Allow Accessibility…**, grant access in System Settings → Privacy & Security → Accessibility, then **Refresh**. The app never requests Screen Recording. Unsigned previews may be blocked by Gatekeeper; use macOS's normal per-app approval only for a build you trust. Do not disable Gatekeeper. Distributing a production release still requires Developer ID signing and notarization.
+- **Manjaro:** install dependencies with `sudo pacman -S --needed python tk xdotool`, extract the Linux archive, and run `./install.sh`.
+- **Ubuntu:** install dependencies with `sudo apt install python3 python3-tk xdotool`, extract the Linux archive, and run `./install.sh`.
+
+Linux installation is per user and requires no root. Dependency installation is a separate, explicit system-administration step. Log into an **X11** session. The launcher appears as **STEPfwd TypePaste**; the app can also run from source:
 
 ```bash
-sudo pacman -S --needed python tk xdotool
-unzip stepfwd-typepaste.zip
-cd stepfwd-typepaste
-./install.sh
+python3 stepfwd_sidecar.py
 ```
 
-Launch **STEPfwd TypePaste** from the application menu, or directly:
-
-```bash
-python3 ~/.local/share/stepfwd-typepaste/stepfwd_sidecar.py
-```
-
-If you do not want to install it, run `python3 stepfwd_sidecar.py` directly in the extracted folder.
+Source runs need Python 3.10+ and Tk. macOS additionally needs the pinned bridges in `requirements-macos.txt`, installed in a virtual environment. Windows and Linux have no Python runtime dependencies beyond the standard library; Linux needs the external `xdotool` command.
 
 ## Use
 
-1. Open STEPfwd in **Firefox** and open Kali's terminal. Drag the sidecar into the **white left margin** (default window position is at X=12, Y=155, width=230px, matching the 1728px screenshot; drag it if the display differs).
-2. Click **1 Link STEPfwd Firefox** on the sidecar, then click anywhere **inside the Firefox STEPfwd window**. The sidecar should report **Firefox linked**. This remembers the Firefox window ID to avoid typing into other browser windows. Re-link if you restart Firefox or move STEPfwd to a different Firefox window.
-3. Copy text from the other monitor. Paste it into the sidecar using Ctrl+V, or click **↓ Clipboard**.
-4. Click **2 ARM PASTE → click VM**. It is now armed for up to 35 seconds.
-5. Click **directly inside the Kali terminal or editor** in STEPfwd. After a 220ms focus-settle interval, xdotool starts typing the text into the VM. The sidecar stays open and retains the text so you can reuse it. No fixed 3-second countdown.
-6. Press **Esc** while the sidecar is focused, or **Cancel / Stop**, to cancel/interrupt an operation. Losing Firefox focus mid-transfer also interrupts it as a best-effort guard. Partial input may already have been sent.
+1. Click **1 Link STEPfwd Firefox**, then click the Firefox window containing STEPfwd. Linking times out after 45 seconds.
+2. Paste text into the sidecar or click **Clipboard**. The clipboard is read only when you request it.
+3. Click **2 ARM PASTE → click VM**, or press Ctrl+Enter in the editor (Command+Enter also works on macOS).
+4. Click **directly inside the guest terminal/editor** within 35 seconds. Typing begins after the linked window holds focus for 220 ms.
+5. Use **Cancel / Stop**, or Escape while the sidecar is focused, to stop. Losing the linked window's focus stops at the next backend check. Check for partial input before trying again.
 
-Ctrl+Enter in the sidecar editor also arms the transfer. The **40 ms per key** default is intentionally conservative (matching the command that worked in STEPfwd). If characters are missed, increase to 70 or 120ms.
+40 ms is the default minimum interval; choose 70 or 120 for slower consoles. Backend overhead may make typing slower than the selected interval. Keep modifier keys released while typing. Text stays in the sidecar for repeated use; **Clear** removes it. Opening Settings cancels an active transfer. Changing the host profile or clicking Refresh also discards the target link.
 
-### Multiline safety
+The **gear** chooses the native **host** OS, not the guest Kali OS. Auto is recommended. An incorrect manual override disables Link and Arm and explains why. The settings panel shows backend availability and permission requirements.
 
-Embedded newlines and tab characters are blocked by default. Typing an Enter or Tab in a shell is **not the same** as pasting: it can execute commands or trigger completion. To type a script, first open a text editor in the VM (such as `nano`), enable **Multiline**, and accept the confirmation. Do not arm multiline text at a shell prompt unless you explicitly intend to execute it. Trailing newlines are removed so pasting a copied one-liner does not automatically run it.
+## Input safety and limitations
 
-The sidecar does not log or save transferred text. It only saves window geometry and typing speed under `~/.config/stepfwd-typepaste/preferences.json`. It never uploads the text anywhere.
+- Explicit Arm is required for every transfer. The backend checks linked window identity before **each character**. Window/application matching never depends on a title substring.
+- This is a best-effort guard, not atomic routing: focus can change between inspection and OS event delivery. One in-flight character/key pair can still arrive after a change or cancellation. No desktop automation can promise that window focus alone identifies the guest terminal.
+- A different tab, Firefox's address bar, a browser popup, or a different guest field inside the same linked window may be indistinguishable. Always click the actual VM input area and keep that tab selected.
+- No final Enter is added; trailing CR/LF are stripped. Embedded newlines and tabs are blocked by default. **Multiline** opt-in plus a per-transfer confirmation is required for either. Enter can execute commands and Tab can trigger completion or move focus: use a guest text editor.
+- NUL, Escape, Backspace, other control characters, invalid surrogates and alternate Unicode line separators are rejected. Text is limited to 20,000 characters.
+- Stop is not a global hotkey. Escape only works in the sidecar; clicking Stop also moves focus away from Firefox. Cancellation cannot undo input already sent.
+- No clipboard text, target IDs, histories or permission choices are persisted. Only geometry, host profile and typing delay are saved. Multiline always starts disabled.
+- Preferences: Linux `$XDG_CONFIG_HOME/stepfwd-typepaste/preferences.json` (default `~/.config`); Windows `%LOCALAPPDATA%/stepfwd-typepaste/preferences.json`; macOS `~/Library/Application Support/stepfwd-typepaste/preferences.json`.
 
-### Always visible in Firefox fullscreen on KDE
+Wayland is intentionally unavailable: `ydotool`/`uinput` can inject keys but do not establish trustworthy foreground-window identity, and the RemoteDesktop portal requires a separate consent/session design. This version does not request device permissions, start privileged daemons, or quietly fall back to XWayland.
 
-The sidecar uses Tk's `-topmost` flag (the **Pin** checkbox) by default, which works above ordinary windows. **True fullscreen is compositor-dependent**; KWin can place fullscreen Firefox above ordinary topmost windows. If the sidecar disappears behind Firefox in F11:
+## Fullscreen and two monitors
 
-1. While the sidecar is visible, right-click its window title bar → **More Actions** → **Configure Special Window Settings** (or visit **System Settings → Window Management → Window Rules**).
-2. Add a rule matching only **STEPfwd TypePaste** by its window title; do not match every Python or Tkinter window.
-3. Add **Layer**, choose **Overlay**, with **Force**. Add **Keep Above Other Windows**, if available, and set to **Yes**. Apply the rule, then retry Firefox F11.
-4. If your Plasma version has no **Layer** rule or still hides the sidecar, use Firefox maximized but **not F11 fullscreen**. This makes the white margins visible without losing the sidecar.
+Drag the roughly 230-pixel sidecar into STEPfwd's white margin. **Pin** requests always-on-top; fullscreen stacking is controlled by the desktop. On KDE, create a KWin window rule matching only `STEPfwdTypePaste` or the exact title and try **Keep Above**. If your KWin version exposes a **Layer → Overlay** rule, it may help. Otherwise maximize Firefox without F11, keep TypePaste on the other monitor, or leave fullscreen to arm it. Other desktops and macOS fullscreen Spaces may require the same alternatives.
 
-This KWin `Layer → Overlay` mechanism has been recommended by KWin maintainers for keeping picture-in-picture windows visible above fullscreen windows. It may depend on your Plasma build.
+## Tests and builds
 
-Reference: https://www.mail-archive.com/kde-bugs-dist@kde.org/msg896612.html
-
-### Troubleshooting
-
-- **The link action never detects Firefox:** Run `xdotool getactivewindow getwindowclass` in a **local terminal while Firefox is active**. It should print `firefox`. Firefox may be running as a native Wayland window or your session may not allow X11 introspection.
-- **`xdotool type` worked manually, but the sidecar does not:** Confirm the Firefox window ID is linked, click *inside the Kali console* rather than on the surrounding white area, and keep focus there until typing finishes. Re-link after Firefox restarts.
-- **Characters are missing:** Increase the typing speed delay to 70 or 120ms. Note: larger delay means *slower* typing.
-- **The app can't start:** `echo $XDG_SESSION_TYPE` should normally report `x11`; this program depends on `xdotool` and access to Firefox through X11/XWayland. `echo $DISPLAY` should return something.
-- **Clipboard is empty:** Ensure the copied item is text (not a file or image) and use Ctrl+V in the editor as an alternative.
-- **A permission prompt appears:** X11 `xdotool` normally does not require root. If Plasma or another tool requests permission, inspect the exact prompt instead of granting blanket admin privileges; do not run this app with `sudo`.
-
-## Architecture and extra-credit findings
-
-`Text in host memory → xdotool XTEST key events → Firefox STEPfwd console → Kali's focused terminal/editor`.
-
-The app watches the active X11 window ID, requires an explicit target binding, and only types when that exact target Firefox window regains focus. It deliberately uses no API calls, VMware agent, hypervisor access, or direct access to STEPfwd internals. This demonstrates that blocking native clipboard integration does not inherently block text injection by simulated keystrokes. The simulation's success with your Kali terminal is established by your screenshot; the sidecar's behavior needs real-world validation on your machine.
-
-**Scope:** use only where your instructor/lab explicitly permits input automation. The application does not attempt privilege escalation or unauthorized access.
-
-## Handoff to Codex
-
-The repository contains `AGENTS.md` (instructions Codex automatically reads) and `CODEX_HANDOFF.md` (detailed milestones). Extract the archive, then launch Codex CLI in the extracted folder and request it to read those two files before beginning. For a ready-to-paste task prompt, see the end of `CODEX_HANDOFF.md`.
+The test-first history includes failing contract commits followed by implementations. Native API tests use fakes and emit no real input. UI tests use a fake backend. X11 integration tests require explicit opt-in and verify they are on Xvfb before touching focus metadata.
 
 ```bash
-# Install the Codex CLI first, if it is not installed:
-npm install -g @openai/codex
-
-cd ~/Downloads/stepfwd-typepaste
-python3 -m unittest -v test_core.py
-codex
+python3 -m unittest -v test_core.py test_native.py
+python3 -m py_compile stepfwd_sidecar.py
+TYPEPASTE_REQUIRE_GUI=1 TYPEPASTE_X11_TEST=1 xvfb-run -a python3 -m unittest -v test_ui.py test_x11_integration.py
 ```
 
-The CLI prompts you to sign in to ChatGPT. No GitHub upload is required for local Codex CLI. Git checkpoints are recommended before larger changes.
+Build on the destination operating system:
+
+```bash
+# Manjaro / Ubuntu: source bundle, no Python build dependencies
+./scripts/build-linux.sh
+
+# macOS: installs pinned build dependencies in .venv
+./scripts/build-macos.sh
+```
+
+On Windows with Python 3.12 installed, run `scripts/build-windows.ps1` from PowerShell. It creates `.venv` and runs the tests before packaging. Outputs go to `dist/`. The Linux bundle uses the host's Python/Tk/xdotool to avoid incompatible bundled glibc versions across distros. GitHub Actions runs unit tests, GUI smoke checks and native packaging on Ubuntu, Windows Server and macOS; Linux also runs Xvfb integration tests. It uploads artifacts without publishing a public release.
+
+## Architecture and release gate
+
+- `stepfwd_sidecar.py`: compact Tk UI; no native keyboard or focus code.
+- `typepaste/core.py`: explicit link/arm/settle/type lifecycle, timeouts, generation-safe cancellation and worker isolation.
+- `typepaste/backends/`: typed target/capability records and separate Linux, Windows and macOS adapters.
+- `typepaste/preferences.py`: atomic, allowlisted preference writes.
+
+Before claiming production support, complete [the real-machine acceptance checklist](CODEX_HANDOFF.md), validate packaged launches on the destination hardware and STEPfwd, and sign/notarize native releases. Never claim CI fakes or Xvfb prove the remote VM accepted text.
+
+Implementation references: [Microsoft SendInput](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-sendinput), [Apple Accessibility trust](https://developer.apple.com/documentation/applicationservices/1459186-axisprocesstrustedwithoptions), [PyObjC ApplicationServices](https://pyobjc.readthedocs.io/en/latest/apinotes/ApplicationServices.html), [PyInstaller native builds](https://pyinstaller.org/en/stable/), [RemoteDesktop portal](https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.RemoteDesktop.html).

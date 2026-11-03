@@ -65,6 +65,33 @@ The UI layer should depend on a typed adapter interface, not conditional branche
 - Existing v0.2 UI is not yet functionally tested on the user's Manjaro machine. Only the one-shot xdotool command is confirmed to work.
 - Physical testing on Windows 11/macOS/Ubuntu is needed before claiming support.
 
-## Suggested starting Codex task
+## v0.3 implementation update — 2026-11-03
 
-> Read AGENTS.md and CODEX_HANDOFF.md. Refactor STEPfwd TypePaste into a cross-platform architecture with a clearly labeled gear/settings menu for Auto, Windows 11, macOS, Manjaro Linux, and Ubuntu host OS profiles. Keep the existing Manjaro/X11 behavior working, require an explicit Arm action, verify target focus, preserve multiline and no-auto-Enter safeguards, and show honest unavailable states for unimplemented OS backends. Start by implementing and testing M1, propose the minimal adapter boundary for M2–M4, then execute further milestones only with code and real test evidence. Add tests and update README for every stage.
+The slim Tk reference UI is retained. Native code lives in separate adapters; the controller owns link/arm/settle/type state and runs transfers outside Tk. The Windows adapter uses SendInput UTF-16 events, exact HWND/PID and Firefox executable checks. The macOS adapter uses Quartz Unicode events and Accessibility focused-window identity via CFEqual, with an explicit permission button. Native libraries are loaded only on their own host.
+
+Linux still uses xdotool/XTEST with payloads on stdin. Focus is checked per character. A real isolated Xvfb test exposed dropped Unicode with xdotool's zero delay; a 20 ms internal delay fixes the tested accented character and is retained. Requested speed is a minimum interval including backend time. No physical STEPfwd validation has been added by these tests.
+
+Wayland/XWayland sessions now fail closed. DISPLAY alone is not enough to verify focus when native Wayland applications are present. A future consent-based portal adapter must solve focus identity before enabling input; do not enable ydotool as an unchecked fallback.
+
+Safety improvements: exact window/process/application matching, control-character rejection, confirmation for tabs as well as newlines, cancellation on Settings, profile changes unlink targets, stale worker results cannot override new UI state, and a new transfer cannot start while a cancelled worker is still running. Only allowlisted preferences persist. Focus checks and event delivery are not atomic: document residual in-flight input risk.
+
+Tests are in test_core.py, test_native.py, test_ui.py and test_x11_integration.py. The Git history records test-first contract commits. The GitHub Actions workflow builds destination-native artifacts. Windows Server CI is not Windows 11 testing. Automated macOS UI/build checks do not establish STEPfwd input compatibility. Read the actual CI run results before reporting success.
+
+## Remaining real-machine release gate
+
+Record host version, CPU architecture, X11/Wayland session, browser version, local/guest keyboard layouts, package identifier, and result for each run. Do not record actual clipboard content, credentials or personal screenshots.
+
+For **each** of Manjaro X11, Ubuntu X11, Windows 11 and macOS:
+
+- [ ] Launch the packaged app on a clean user account; verify settings, gear, fonts, DPI and multi-monitor positioning.
+- [ ] Link the actual STEPfwd Firefox window and send a harmless `STEPfwd test 123` sample.
+- [ ] Verify mixed case, quotes, pipes, backslashes, shell metacharacters, accented text, non-Latin text and supplementary-plane Unicode. Record unsupported characters/console behavior honestly.
+- [ ] Confirm no typing before Arm, after timeout, after Cancel, or when another Firefox window is foreground.
+- [ ] Confirm focus loss and Stop halt a long transfer; inspect partial input and repeat promptly to catch stale-worker races.
+- [ ] Check trailing newline removal, multiline/tab confirmation and modifier-key behavior in a guest editor.
+- [ ] Check browser tabs/address bar limitations and fullscreen fallback, including macOS Spaces/KDE rules.
+- [ ] Windows: test ordinary versus elevated Firefox; failure must never suggest elevation or bypass. Verify VK_PACKET reaches the remote console.
+- [ ] macOS: test Accessibility denied, granted, revoked and app relocation; verify the focused AX window is available and Unicode events reach the console. No Screen Recording request.
+- [ ] Verify cancellation/clean shutdown from a packaged build and that preferences contain no payload data.
+
+Release signing/notarization and real-machine validation remain required. v0.3 must remain labeled a preview until those gates pass.
